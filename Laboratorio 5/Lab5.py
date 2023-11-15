@@ -1,3 +1,6 @@
+### Juan Ignacio Valdivia ###
+### 21.087.645-6 ###
+
 import psycopg2
 import psycopg2.extras
 import csv
