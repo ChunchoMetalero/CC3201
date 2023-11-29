@@ -26,6 +26,13 @@ CREATE TABLE Pais (
     nombre VARCHAR(255)
 );
 
+CREATE TABLE GranPremio (
+    id serial PRIMARY KEY,
+    nombre VARCHAR(255),
+    fecha DATE,
+    clima VARCHAR(255)
+);
+
 
 /* RELACIONES */
 
@@ -37,14 +44,64 @@ CREATE TABLE Equipo (
     FOREIGN KEY (Pi_id) REFERENCES Piloto(id)
 );
 
+CREATE TABLE Piloto_Pais (
+    Pi_id bigint not null,
+    Pa_id bigint not null,
+    PRIMARY KEY (Pi_id, Pa_id),
+    FOREIGN KEY (Pi_id) REFERENCES Piloto(id),
+    FOREIGN KEY (Pa_id) REFERENCES Pais(id)
+);
+
+CREATE TABLE Temporada_Escuderia (
+    Es_id bigint not null,
+    T_id bigint not null,
+    ptje_acumulado INT,
+    es_campeon BOOLEAN,
+    PRIMARY KEY (Es_id, T_id),
+    FOREIGN KEY (Es_id) REFERENCES Escuderia(id),
+    FOREIGN KEY (T_id) REFERENCES Temporada(id)
+);
+
+CREATE TABLE Temporata_Piloto (
+    T_id bigint not null,
+    Pi_id bigint not null,
+    ptje_acumulado INT,
+    es_campeon BOOLEAN,
+    numero_piloto INT,
+    PRIMARY KEY (T_id, Pi_id),
+    FOREIGN KEY (Pi_id) REFERENCES Piloto(id),
+    FOREIGN KEY (T_id) REFERENCES Temporada(id)
+);
+
+CREATE TABLE Equipo_GranPremio (
+
+
+);
+
+CREATE TABLE GranPremio_Circuito (
+    Gp_id bigint not null,
+    Cir_id bigint not null,
+    PRIMARY KEY (Gp_id,Cir_id),
+    FOREIGN KEY (Cir_id) REFERENCES Circuito(id),
+    FOREIGN KEY (Gp_id) REFERENCES GranPremio(id)
+);
+
+CREATE TABLE Circuito_Pais (
+    Cir_id bigint not null,
+    Pa_id bigint not null,
+    PRIMARY KEY (Cir_id, Pa_id),
+    FOREIGN KEY (Cir_id) REFERENCES Circuito(id),
+    FOREIGN KEY (Pa_id) REFERENCES Pais(id)
+);
+
+
 CREATE TABLE GranPremio (
     T_id bigint not null,
     EqE_id bigint not null,
     EqP_id bigint not null,
     Cir_id bigint not null,
     nombre VARCHAR(255),
-    fecha DATE,
-    clima VARCHAR(255),
+    
     posicion_carrera INT,
     vuelta_rapida_c TIME,
     posicion_qualy INT,
@@ -56,39 +113,4 @@ CREATE TABLE GranPremio (
     FOREIGN KEY (Cir_id) REFERENCES Circuito(id)
 );
 
-CREATE TABLE Nacionalidad (
-    Pi_id bigint not null,
-    Pa_id bigint not null,
-    PRIMARY KEY (Pi_id, Pa_id),
-    FOREIGN KEY (Pi_id) REFERENCES Piloto(id),
-    FOREIGN KEY (Pa_id) REFERENCES Pais(id)
-);
 
-CREATE TABLE EstaEn (
-    Cir_id bigint not null,
-    Pa_id bigint not null,
-    PRIMARY KEY (Cir_id, Pa_id),
-    FOREIGN KEY (Cir_id) REFERENCES Circuito(id),
-    FOREIGN KEY (Pa_id) REFERENCES Pais(id)
-);
-
-CREATE TABLE Ch_Constructores (
-    Es_id bigint not null,
-    T_id bigint not null,
-    ptje_acumulado INT,
-    es_campeon BOOLEAN,
-    PRIMARY KEY (Es_id, T_id),
-    FOREIGN KEY (Es_id) REFERENCES Escuderia(id),
-    FOREIGN KEY (T_id) REFERENCES Temporada(id)
-);
-
-CREATE TABLE Ch_Pilotos (
-    T_id bigint not null,
-    Pi_id bigint not null,
-    ptje_acumulado INT,
-    es_campeon BOOLEAN,
-    numero_piloto INT,
-    PRIMARY KEY (T_id, Pi_id),
-    FOREIGN KEY (Pi_id) REFERENCES Piloto(id),
-    FOREIGN KEY (T_id) REFERENCES Temporada(id)
-);
