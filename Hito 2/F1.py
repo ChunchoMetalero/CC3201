@@ -44,6 +44,11 @@ DROP TABLE IF EXISTS Circuito;
 DROP TABLE IF EXISTS Temporada;
 """
 
+# Drop SUPremo
+""" 
+Drop Table if Exists Circuito_Pais, GranPremio_Circuito, Equipo_GranPremio, Temporada_Piloto, 
+Temporada_Escuderia, Piloto_Pais, Equipo, GranPremio, Pais, Piloto, Escuderia, Circuito, Temporada CASCADE;
+"""
 cur.execute(query_eliminar_tablas)
 
 query_creacion_tablas = """
@@ -116,7 +121,7 @@ CREATE TABLE Equipo_GranPremio (
     tiempo_qualy TIME,
     edad_piloto INT,
     PRIMARY KEY (EqEs_id,EqPi_id,Gp_id),
-    FOREIGN KEY (EqEs_id,EqPi) REFERENCES Equipo(Es_id, Pi_id),
+    FOREIGN KEY (EqEs_id,EqPi_id) REFERENCES Equipo(Es_id, Pi_id),
     FOREIGN KEY (Gp_id) REFERENCES GranPremio(id)
 );
 CREATE TABLE GranPremio_Circuito (
@@ -245,8 +250,7 @@ with open ('circuits.csv') as csvfile:
             cur.execute("insert into Circuito_Pais (pa_id,cir_id) values (%s, %s)", [Pa_id,ci_id])
         
        
-"""
- 
+
 with open ('races.csv') as csvfile:
         reader = csv.reader(csvfile, delimiter = ',', quotechar = '"')
         k = 0
@@ -254,8 +258,8 @@ with open ('races.csv') as csvfile:
             k+=1
             if k==1:
                 continue
-            if k>30:
-                break
+            #if k>30:
+                #break
 
             #Nombre Gran Premio
             gp_name = row[4]
@@ -263,13 +267,45 @@ with open ('races.csv') as csvfile:
             #Fecha Gran Premio
             gp_date = row[5]
 
-            # Id de Temporada
-            year= row[1]
-            t_id = findOrInsert('temporada',year)
+            #gran premio
+            cur.execute("select id from granpremio where nombre=%s and fecha= %s limit 1", [gp_name,gp_date])
+            r = cur.fetchone()
+            if(r):
+                gp_id = r[0]
+            else:
+                cur.execute("insert into granpremio (nombre,fecha) values (%s,%s) returning id", [gp_name,gp_date])
+                gp_id = cur.fetchone()[0]
+
+
+            circuito_id = row[3]
+
+            with open ('circuits.csv') as csvfile1:
+                reader1 = csv.reader(csvfile1, delimiter = ',', quotechar = '"')
+                i = 0
+                for row1 in reader1:
+                    i+=1
+                    if i==1:
+                        continue
+                    if row1[0] == circuito_id:
+                        circuito = row1[2]
+                        cur.execute("select id from circuito where nombre=%s limit 1", [unidecode(circuito)])
+                        cir_id = cur.fetchone()[0]
+                        break
+                    
+            #gran premio_circuito
+            cur.execute("select * from granpremio_circuito where (gp_id,cir_id) = (%s, %s) limit 1", [gp_id,cir_id])
+            if (not cur.fetchone()):
+                cur.execute("insert into granpremio_circuito (gp_id,cir_id) values (%s, %s)", [gp_id,cir_id])
+            
+
+
 
             
-            id_race = row[0]
-            id_circuit = row[3]
+
+
+            
+
+            """ 
             with open ('results.csv') as csvfile:
                 reader = csv.reader(csvfile, delimiter = ',', quotechar = '"')
                 i = 0
@@ -288,8 +324,16 @@ with open ('races.csv') as csvfile:
                                 if i==1:
                                     continue
 
+        
+                                
+                              
+            # Id de Temporada
+            year= row[1]
+            t_id = findOrInsert('temporada',year)
 
-                
+            
+            id_race = row[0]
+            id_circuit = row[3]    
 
 
             clima = "Sunny C:"
@@ -308,7 +352,7 @@ with open ('races.csv') as csvfile:
             else:
                 cur.execute("insert into granpremio (fecha) values (%s) returning id", [gp_date])
                 gp_date_id = cur.fetchone()[0]
-    """
+            """
     
 conn.commit()
 
