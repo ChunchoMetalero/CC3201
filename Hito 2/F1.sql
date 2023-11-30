@@ -62,7 +62,7 @@ CREATE TABLE Temporada_Escuderia (
     FOREIGN KEY (T_id) REFERENCES Temporada(id)
 );
 
-CREATE TABLE Temporata_Piloto (
+CREATE TABLE Temporada_Piloto (
     T_id bigint not null,
     Pi_id bigint not null,
     ptje_acumulado INT,
@@ -74,6 +74,17 @@ CREATE TABLE Temporata_Piloto (
 );
 
 CREATE TABLE Equipo_GranPremio (
+    EqEs_id bigint not null,
+    EqPi_id bigint not null,
+    Gp_id bigint not null,
+    posicion_carrera INT,
+    vuelta_rapida_c TIME,
+    posicion_qualy INT,
+    tiempo_qualy TIME,
+    edad_piloto INT,
+    PRIMARY KEY (EqEs_id,EqPi_id,Gp_id),
+    FOREIGN KEY (EqEs_id,EqPi) REFERENCES Equipo(Es_id, Pi_id),
+    FOREIGN KEY (Gp_id) REFERENCES GranPremio(id)
 
 
 );
@@ -93,24 +104,3 @@ CREATE TABLE Circuito_Pais (
     FOREIGN KEY (Cir_id) REFERENCES Circuito(id),
     FOREIGN KEY (Pa_id) REFERENCES Pais(id)
 );
-
-
-CREATE TABLE GranPremio (
-    T_id bigint not null,
-    EqE_id bigint not null,
-    EqP_id bigint not null,
-    Cir_id bigint not null,
-    nombre VARCHAR(255),
-    
-    posicion_carrera INT,
-    vuelta_rapida_c TIME,
-    posicion_qualy INT,
-    tiempo_qualy TIME,
-    edad_piloto INT,
-    PRIMARY KEY (T_id, EqE_id, EqP_id),
-    FOREIGN KEY (T_id) REFERENCES Temporada(id),
-    FOREIGN KEY (EqE_id,EqP_id) REFERENCES Equipo(Es_id,Pi_id),
-    FOREIGN KEY (Cir_id) REFERENCES Circuito(id)
-);
-
-

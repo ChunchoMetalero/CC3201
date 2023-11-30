@@ -8,6 +8,12 @@ import re
 import openpyxl
 from unidecode import unidecode
 
+################################################################################################################
+################################################################################################################
+'''                                             Conexión a la DBS                                            '''
+################################################################################################################
+################################################################################################################
+
 conn = psycopg2.connect(host ="cc3201.dcc.uchile.cl",
 database ="cc3201",
 user ="cc3201",
@@ -15,6 +21,126 @@ password ="completo", port ="5521")
 
 cur = conn.cursor()
 cur.execute("SET search_path TO F1;")
+
+
+################################################################################################################
+################################################################################################################
+'''                                         Creación del las tablas                                          '''
+################################################################################################################
+################################################################################################################
+query_eliminar_tablas = """
+DROP TABLE IF EXISTS Circuito_Pais;
+DROP TABLE IF EXISTS GranPremio_Circuito;
+DROP TABLE IF EXISTS Equipo_GranPremio;
+DROP TABLE IF EXISTS Temporada_Piloto;
+DROP TABLE IF EXISTS Temporada_Escuderia;
+DROP TABLE IF EXISTS Piloto_Pais;
+DROP TABLE IF EXISTS Equipo;
+DROP TABLE IF EXISTS GranPremio;
+DROP TABLE IF EXISTS Pais;
+DROP TABLE IF EXISTS Piloto;
+DROP TABLE IF EXISTS Escuderia;
+DROP TABLE IF EXISTS Circuito;
+DROP TABLE IF EXISTS Temporada;
+"""
+
+cur.execute(query_eliminar_tablas)
+
+query_creacion_tablas = """
+CREATE TABLE Temporada (
+    id serial PRIMARY KEY,
+    agno INT
+);
+CREATE TABLE Circuito (
+    id serial PRIMARY KEY,
+    nombre VARCHAR(255)
+);
+CREATE TABLE Escuderia (
+    id serial PRIMARY KEY,
+    nombre VARCHAR(255)
+);
+CREATE TABLE Piloto (
+    id serial PRIMARY KEY,
+    nombre VARCHAR(255)
+);
+CREATE TABLE Pais (
+    id serial PRIMARY KEY,
+    nombre VARCHAR(255)
+);
+CREATE TABLE GranPremio (
+    id serial PRIMARY KEY,
+    nombre VARCHAR(255),
+    fecha DATE,
+    clima VARCHAR(255)
+);
+CREATE TABLE Equipo (
+    Es_id bigint not null,
+    Pi_id bigint not null,
+    PRIMARY KEY (Es_id, Pi_id),
+    FOREIGN KEY (Es_id) REFERENCES Escuderia(id),
+    FOREIGN KEY (Pi_id) REFERENCES Piloto(id)
+);
+CREATE TABLE Piloto_Pais (
+    Pi_id bigint not null,
+    Pa_id bigint not null,
+    PRIMARY KEY (Pi_id, Pa_id),
+    FOREIGN KEY (Pi_id) REFERENCES Piloto(id),
+    FOREIGN KEY (Pa_id) REFERENCES Pais(id)
+);
+CREATE TABLE Temporada_Escuderia (
+    Es_id bigint not null,
+    T_id bigint not null,
+    ptje_acumulado INT,
+    es_campeon BOOLEAN,
+    PRIMARY KEY (Es_id, T_id),
+    FOREIGN KEY (Es_id) REFERENCES Escuderia(id),
+    FOREIGN KEY (T_id) REFERENCES Temporada(id)
+);
+CREATE TABLE Temporada_Piloto (
+    T_id bigint not null,
+    Pi_id bigint not null,
+    ptje_acumulado INT,
+    es_campeon BOOLEAN,
+    numero_piloto INT,
+    PRIMARY KEY (T_id, Pi_id),
+    FOREIGN KEY (Pi_id) REFERENCES Piloto(id),
+    FOREIGN KEY (T_id) REFERENCES Temporada(id)
+);
+CREATE TABLE Equipo_GranPremio (
+    EqEs_id bigint not null,
+    EqPi_id bigint not null,
+    Gp_id bigint not null,
+    posicion_carrera INT,
+    vuelta_rapida_c TIME,
+    posicion_qualy INT,
+    tiempo_qualy TIME,
+    edad_piloto INT,
+    PRIMARY KEY (EqEs_id,EqPi_id,Gp_id),
+    FOREIGN KEY (EqEs_id,EqPi) REFERENCES Equipo(Es_id, Pi_id),
+    FOREIGN KEY (Gp_id) REFERENCES GranPremio(id)
+);
+CREATE TABLE GranPremio_Circuito (
+    Gp_id bigint not null,
+    Cir_id bigint not null,
+    PRIMARY KEY (Gp_id,Cir_id),
+    FOREIGN KEY (Cir_id) REFERENCES Circuito(id),
+    FOREIGN KEY (Gp_id) REFERENCES GranPremio(id)
+);
+CREATE TABLE Circuito_Pais (
+    Cir_id bigint not null,
+    Pa_id bigint not null,
+    PRIMARY KEY (Cir_id, Pa_id),
+    FOREIGN KEY (Cir_id) REFERENCES Circuito(id),
+    FOREIGN KEY (Pa_id) REFERENCES Pais(id)
+);"""
+
+cur.execute(query_creacion_tablas)
+    
+################################################################################################################
+################################################################################################################
+'''                                        Rellenado de las tablas                                           '''
+################################################################################################################
+################################################################################################################
 
 def findOrInsert(table, name):
     cur.execute("select id from "+table+" where nombre=%s limit 1", [name])
@@ -24,8 +150,8 @@ def findOrInsert(table, name):
     else:
         cur.execute("insert into "+table+" (nombre) values (%s) returning id", [name])
         return cur.fetchone()[0]
-    
-####   LEER CSV'S   #####
+
+
 with open('drivers_championship_1950-2020.csv') as csvfile:
     reader = csv.reader(csvfile, delimiter = ',', quotechar = '"')
     k = 0
@@ -41,7 +167,6 @@ with open('drivers_championship_1950-2020.csv') as csvfile:
         year = row[1]
         cur.execute("select id from temporada where agno=%s limit 1", [year])
         r = cur.fetchone()
-        T_id = None
         if(r):
             T_id = r[0]
         else:
@@ -65,9 +190,6 @@ with open('drivers_championship_1950-2020.csv') as csvfile:
             cur.execute("insert into equipo (es_id,pi_id) values (%s, %s)", [Es_id,Pi_id])
 
 
-        #puntaje_acumulado_chpi = row[7]
-
-
 with open ('F1Drivers_Dataset.csv') as csvfile:
     reader = csv.reader(csvfile, delimiter = ';', quotechar = '"')
     k = 0
@@ -87,10 +209,10 @@ with open ('F1Drivers_Dataset.csv') as csvfile:
         piloto = unidecode(piloto)
         Pi_id = Pi_id = findOrInsert('piloto', piloto)
 
-        #Nacionalidad
-        cur.execute("select * from nacionalidad where (pa_id,pi_id) = (%s, %s) limit 1", [Pa_id,Pi_id])
+        #Piloto_Pais
+        cur.execute("select * from Piloto_Pais where (pa_id,pi_id) = (%s, %s) limit 1", [Pa_id,Pi_id])
         if (not cur.fetchone()):
-            cur.execute("insert into nacionalidad (pa_id,pi_id) values (%s, %s)", [Pa_id,Pi_id])
+            cur.execute("insert into Piloto_Pais (pa_id,pi_id) values (%s, %s)", [Pa_id,Pi_id])
         
 
 
@@ -109,20 +231,20 @@ with open ('circuits.csv') as csvfile:
 
         #Circuito
         circuito = row[2]
-        circuito = unidecode(circuito)
-        ci_id = findOrInsert('circuito', circuito)
+        circuito_name = unidecode(circuito)
+        ci_id = findOrInsert('circuito', circuito_name)
+
         #Pais circuito  
         pais = row[4]
-        pais = unidecode(pais)
-        Pa_id = findOrInsert('pais', pais)
+        pais_name = unidecode(pais)
+        Pa_id = findOrInsert('pais', pais_name)
 
-        #EstaEn
-        cur.execute("select * from estaen where (pa_id,cir_id) = (%s, %s) limit 1", [Pa_id,ci_id])
+        #Circuito_Pais
+        cur.execute("select * from Circuito_Pais where (pa_id,cir_id) = (%s, %s) limit 1", [Pa_id,ci_id])
         if (not cur.fetchone()):
-            cur.execute("insert into estaen (pa_id,cir_id) values (%s, %s)", [Pa_id,ci_id])
+            cur.execute("insert into Circuito_Pais (pa_id,cir_id) values (%s, %s)", [Pa_id,ci_id])
         
-
-        
+       
 """
  
 with open ('races.csv') as csvfile:
