@@ -95,7 +95,7 @@ CREATE TABLE Piloto_Pais (
 CREATE TABLE Temporada_Escuderia (
     Es_id bigint not null,
     T_id bigint not null,
-    ptje_acumulado INT,
+    ptje_acumulado FLOAT,
     es_campeon BOOLEAN,
     PRIMARY KEY (Es_id, T_id),
     FOREIGN KEY (Es_id) REFERENCES Escuderia(id),
@@ -104,9 +104,9 @@ CREATE TABLE Temporada_Escuderia (
 CREATE TABLE Temporada_Piloto (
     T_id bigint not null,
     Pi_id bigint not null,
-    ptje_acumulado INT,
+    ptje_acumulado FLOAT,
     es_campeon BOOLEAN,
-    numero_piloto INT,
+    posicion_campeonato INT,
     PRIMARY KEY (T_id, Pi_id),
     FOREIGN KEY (Pi_id) REFERENCES Piloto(id),
     FOREIGN KEY (T_id) REFERENCES Temporada(id)
@@ -164,8 +164,8 @@ with open('drivers_championship_1950-2020.csv') as csvfile:
         k+=1
         if k==1:
             continue
-        #if k>3:
-        #    break
+        if k>90:
+            break
         
         ####    ENTIDADES    ####
         #Temporada
@@ -195,6 +195,45 @@ with open('drivers_championship_1950-2020.csv') as csvfile:
             cur.execute("insert into equipo (es_id,pi_id) values (%s, %s)", [Es_id,Pi_id])
 
 
+        #Temporada_Escuderia
+        cur.execute("select * from temporada_escuderia where (t_id,es_id) = (%s, %s) limit 1", [T_id,Es_id])
+        if not cur.fetchone():
+            cur.execute("insert into temporada_escuderia (t_id,es_id,ptje_acumulado,es_campeon) values (%s, %s, %s, %s)", [T_id,Es_id,row[7],False])
+        else:
+            cur.execute("update temporada_escuderia set ptje_acumulado = ptje_acumulado + %s where (t_id,es_id) = (%s, %s)", [row[7],T_id,Es_id])
+            #cur.execute("update temporada_escuderia set es_campeon = true where (t_id,es_id) = (%s, %s) and ptje_acumulado = (select max(ptje_acumulado) from temporada_escuderia where t_id = %s)", [T_id,Es_id,T_id])
+        
+        #Temporada_Piloto
+        cur.execute("select * from temporada_piloto where (t_id,pi_id) = (%s, %s) limit 1", [T_id,Pi_id])
+        if not cur.fetchone():
+            cur.execute("insert into temporada_piloto (t_id,pi_id,ptje_acumulado,es_campeon,posicion_campeonato) values (%s, %s, %s, %s, %s)", [T_id,Pi_id,row[7],False,row[2]])
+            
+query_es_campeon_pilotos = """
+UPDATE temporada_piloto AS t
+SET es_campeon = (ptje_acumulado = (
+        SELECT MAX(t2.ptje_acumulado)
+        FROM temporada_piloto AS t2
+        WHERE t2.t_id = t.t_id
+    )
+);
+"""
+
+
+
+query_es_campeon_constructor = """
+UPDATE temporada_escuderia AS t
+SET es_campeon = (ptje_acumulado = (
+        SELECT MAX(t2.ptje_acumulado)
+        FROM temporada_escuderia AS t2
+        WHERE t2.t_id = t.t_id
+    )
+);
+"""
+cur.execute(query_es_campeon_constructor)
+cur.execute(query_es_campeon_pilotos)
+            
+
+
 with open ('F1Drivers_Dataset.csv') as csvfile:
     reader = csv.reader(csvfile, delimiter = ';', quotechar = '"')
     k = 0
@@ -202,8 +241,8 @@ with open ('F1Drivers_Dataset.csv') as csvfile:
         k+=1
         if k==1:
             continue
-        #if k>277:
-        #    break
+        if k>30:
+            break
     
         pais = row[1]
         pais = unidecode(pais)
@@ -218,10 +257,6 @@ with open ('F1Drivers_Dataset.csv') as csvfile:
         cur.execute("select * from Piloto_Pais where (pa_id,pi_id) = (%s, %s) limit 1", [Pa_id,Pi_id])
         if (not cur.fetchone()):
             cur.execute("insert into Piloto_Pais (pa_id,pi_id) values (%s, %s)", [Pa_id,Pi_id])
-        
-
-
-
 
 
 with open ('circuits.csv') as csvfile:
@@ -231,8 +266,8 @@ with open ('circuits.csv') as csvfile:
         k+=1
         if k==1:
             continue
-        #if k>3:
-        #    break
+        if k>30:
+            break
 
         #Circuito
         circuito = row[2]
@@ -258,8 +293,8 @@ with open ('races.csv') as csvfile:
             k+=1
             if k==1:
                 continue
-            #if k>30:
-                #break
+            if k>30:
+               break
 
             #Nombre Gran Premio
             gp_name = row[4]
@@ -286,6 +321,10 @@ with open ('races.csv') as csvfile:
                     i+=1
                     if i==1:
                         continue
+
+                    if i>30:
+                        break
+
                     if row1[0] == circuito_id:
                         circuito = row1[2]
                         cur.execute("select id from circuito where nombre=%s limit 1", [unidecode(circuito)])
@@ -296,6 +335,18 @@ with open ('races.csv') as csvfile:
             cur.execute("select * from granpremio_circuito where (gp_id,cir_id) = (%s, %s) limit 1", [gp_id,cir_id])
             if (not cur.fetchone()):
                 cur.execute("insert into granpremio_circuito (gp_id,cir_id) values (%s, %s)", [gp_id,cir_id])
+
+            #equipo_granpremio
+            cur.execute("select * from equipo_granpremio where (gp_id,eqes_id,eqpi_id) = (%s, %s, %s) limit 1", [gp_id,Es_id,Pi_id])
+            if (not cur.fetchone()):
+                cur.execute("insert into equipo_granpremio (gp_id,eqes_id,eqpi_id,posicion_carrera,vuelta_rapida_c,posicion_qualy,tiempo_qualy,edad_piloto) values (%s, %s, %s, %s, %s, %s, %s, %s)", [gp_id,Es_id,Pi_id,row[8],row[9],row[10],row[11],row[12]])
+
+
+
+
+
+            
+        
             
 
 
