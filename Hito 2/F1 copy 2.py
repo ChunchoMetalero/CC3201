@@ -159,131 +159,88 @@ def findOrInsert(table, name):
         cur.execute("insert into "+table+" (nombre) values (%s) returning id", [name])
         return cur.fetchone()[0]
 
-with open('qualifying.csv') as csvfile3:
-            reader3 = csv.reader(csvfile3, delimiter = ',', quotechar = '"')
-            l = 0
-            for row3 in reader3:
-                l+=1
-                if l==1:
+with open('drivers_championship_1950-2020.csv') as csvfile:
+    reader = csv.reader(csvfile, delimiter = ',', quotechar = '"')
+    k = 0
+    for row in reader: 
+        k+=1
+        if k==1:
+            continue
+        #if k>90:
+        #    break
+        
+        #Piloto
+        piloto = row[3]
+        piloto = unidecode(piloto)
+        Pi_id = findOrInsert('piloto', piloto)
+
+
+with open('results.csv') as csvfile:
+    reader = csv.reader(csvfile, delimiter = ',', quotechar = '"')
+    k = 0
+    for row in reader:
+        k+=1
+        if k==1:
+            continue
+        #if k>30:
+        #    break
+        
+        raceid = row[1]
+        dirverid = row[2]
+
+        print(raceid)
+
+        if raceid >= '1051':
+            continue
+
+        i = 0
+        with open('drivers.csv') as csvfile1:
+            reader1 = csv.reader(csvfile1, delimiter = ',', quotechar = '"')
+            i = 0
+            for row1 in reader1:
+                i+=1
+                if i==1:
                     continue
-
-                driverid = row3[2]
-                raceid = row3[1]
-                limite = int(row3[1])
-
-                if limite > 1047:
-                    continue 
-
-                with open('drivers.csv') as csvfile1:
-                    reader1 = csv.reader(csvfile1, delimiter = ',', quotechar = '"')
-                    i = 0
-                    for row1 in reader1:
-                        i+=1
-                        if i==1:
-                            continue
-                        #if i>30:
-                        #    break
-                        if row1[0] == driverid:
-                            forename = row1[4]
-                            surname = row1[5]
-                            driver = unidecode(forename + ' ' + surname)
-                            Pi_id = findOrInsert('piloto',driver)
-                            break
-
-                with open('races.csv') as csvfile2:
-                    reader2 = csv.reader(csvfile2, delimiter = ',', quotechar = '"')
-                    j = 0
-                    for row2 in reader2:
-                        j+=1
-                        if j==1:
-                            continue
-                        #if j>30:
-                        #    break
-                        if row2[0] == raceid:
-                            gp_name = row2[4]
-                            gp_name = unidecode(gp_name)
-                            gp_date = row2[5]
-                            gp_year = row2[1]
-                            cur.execute("select id from granpremio where nombre=%s and fecha=%s limit 1", [gp_name,gp_date])
-                            gp_id = cur.fetchone()[0]
-                            cur.execute("select id from temporada where agno=%s limit 1", [gp_year])
-                            T_id = cur.fetchone()[0]
-                            break
-
-                #Qualy times
-                cur.execute("update equipo_granpremio set posicion_qualy = %s, tiempo_qualy_q1 = %s, tiempo_qualy_q2 = %s, tiempo_qualy_q3 = %s where (gp_id,eqpi_id) = (%s, %s)", [row3[5],row3[6],row3[7],row3[8],gp_id,Pi_id])
-
-
-                        
-
-            #equipo_granpremio
-            #cur.execute("select * from equipo_granpremio where (gp_id,eqes_id,eqpi_id) = (%s, %s, %s) limit 1", [gp_id,Es_id,Pi_id])
-            #if (not cur.fetchone()):
-            #    cur.execute("insert into equipo_granpremio (gp_id,eqes_id,eqpi_id,posicion_carrera,vuelta_rapida_c,posicion_qualy,tiempo_qualy,edad_piloto) values (%s, %s, %s, %s, %s, %s, %s, %s)", [gp_id,Es_id,Pi_id,row[8],row[9],row[10],row[11],row[12]])
-
-
-
-
-
-            
+                #if i>30:
+                #    break
+                if row1[0] == dirverid:
+                    forename = row1[4]
+                    surname = row1[5]
+                    driver = unidecode(forename + ' ' + surname)
+                    cur.execute("select id from piloto where nombre=%s limit 1", [driver])
+                    Pi_id = cur.fetchone()[0]
+                    break
         
-            
-
-
-
-            
-
-
-            
-
-            """ 
-            with open ('results.csv') as csvfile:
-                reader = csv.reader(csvfile, delimiter = ',', quotechar = '"')
-                i = 0
-                for row in reader:
-                    i+=1
-                    if i==1:
-                        continue
-                    if id_race == row[1]:
-                        pilot_id = row[2]
-                        constructor_id = row[3]
-                        with open ('constructor.csv') as csvfile:
-                            reader = csv.reader(csvfile, delimiter = ',', quotechar = '"')
-                            i = 0
-                            for row in reader:
-                                i+=1
-                                if i==1:
-                                    continue
+        with open('races.csv') as csvfile2:
+            reader2 = csv.reader(csvfile2, delimiter = ',', quotechar = '"')
+            j = 0
+            for row2 in reader2:
+                j+=1
+                if j==1:
+                    continue
+                #if j>30:
+                #    break
+                if row2[0] == raceid:
+                    gp_name = row2[4]
+                    gp_name = unidecode(gp_name)
+                    gp_date = row2[5]
+                    gp_year = row2[1]
+                    cur.execute("select id from granpremio where nombre=%s and fecha=%s limit 1", [gp_name,gp_date])
+                    gp_id = cur.fetchone()[0]
+                    cur.execute("select id from temporada where agno=%s limit 1", [gp_year])
+                    T_id = cur.fetchone()[0]
+                    break
+        
+        equipo = cur.execute("select es_id from equipo where pi_id=%s and t_id=%s limit 1", [Pi_id,T_id])
+        Es_id = cur.fetchone()[0]
 
         
-                                
-                              
-            # Id de Temporada
-            year= row[1]
-            t_id = findOrInsert('temporada',year)
 
-            
-            id_race = row[0]
-            id_circuit = row[3]    
-
-
-            clima = "Sunny C:"
-            #GranPremio
-            cur.execute("select * from granpremio where (T_id,EqE_id,EqP_id,Cir_id,nombre,fecha,clima,posicion_carrera, vuelta_rapida_c,posicion_qualy,tiempo_qualy,edad_piloto) = (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) limit 1", [])
-            if (not cur.fetchone()):
-                cur.execute("insert into granpremio (T_id,EqE_id,EqP_id,Cir_id,nombre,fecha,clima,posicion_carrera, vuelta_rapida_c,posicion_qualy,tiempo_qualy,edad_piloto) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", [])
-
-
-    
-            cur.execute("select id from granpremio where fecha=%s limit 1", [gp_date])
-            r = cur.fetchone()
-            gp_date_id = None
-            if(r):
-                gp_date_id = r[0]
-            else:
-                cur.execute("insert into granpremio (fecha) values (%s) returning id", [gp_date])
-                gp_date_id = cur.fetchone()[0]
-            """
+        #equipo_granpremio
+        cur.execute("select * from equipo_granpremio where (gp_id,eqpi_id) = (%s, %s) limit 1", [gp_id,Pi_id])
+        if (not cur.fetchone()):
+            cur.execute("insert into equipo_granpremio (eqes_id,eqpi_id,eqt_id,gp_id,posicion_carrera,vuelta_rapida_c,posicion_qualy,tiempo_qualy,edad_piloto) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)", [Es_id,Pi_id,T_id,gp_id,1,"1:15.791",1,"1:15.791",30])
+        
     
 conn.commit()
 
