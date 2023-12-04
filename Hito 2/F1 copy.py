@@ -20,7 +20,7 @@ user ="cc3201",
 password ="completo", port ="5521")
 
 cur = conn.cursor()
-cur.execute("SET search_path TO F1;")
+cur.execute("SET search_path TO F1_2;")
 
 
 ################################################################################################################
@@ -378,7 +378,7 @@ with open('results.csv') as csvfile:
         raceid = row[1]
         dirverid = row[2]
         limite = int(row[1])
-        
+        print(raceid)
 
         if limite > 1047:
             continue 
@@ -454,62 +454,69 @@ with open('results.csv') as csvfile:
         #equipo_granpremio
         cur.execute("select * from equipo_granpremio where (gp_id,eqpi_id) = (%s, %s) limit 1", [gp_id,Pi_id])
         if (not cur.fetchone()):
-            cur.execute("insert into equipo_granpremio (eqes_id,eqpi_id,eqt_id,gp_id,posicion_carrera,vuelta_rapida_c,posicion_qualy,tiempo_qualy_q1,tiempo_qualy_q2,tiempo_qualy_q3) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [Es_id,Pi_id,T_id,gp_id,row[8],row[15],1,"0:00.000","0:00.000","0:00.000"])
+            cur.execute("insert into equipo_granpremio (eqes_id,eqpi_id,eqt_id,gp_id,posicion_carrera,vuelta_rapida_c) values (%s, %s, %s, %s, %s, %s)", [Es_id,Pi_id,T_id,gp_id,row[8],row[15]])
 
 with open('qualifying.csv') as csvfile3:
-            reader3 = csv.reader(csvfile3, delimiter = ',', quotechar = '"')
-            l = 0
-            for row3 in reader3:
-                l+=1
-                if l==1:
+    reader3 = csv.reader(csvfile3, delimiter = ',', quotechar = '"')
+    l = 0
+    for row3 in reader3:
+        l+=1
+
+        if l==1:
+            continue
+
+        driverid = row3[2]
+        raceid = row3[1]
+        limite = int(row3[1])
+
+        if limite > 1047:
+            continue 
+
+        with open('drivers.csv') as csvfile1:
+            reader1 = csv.reader(csvfile1, delimiter = ',', quotechar = '"')
+            i = 0
+            for row1 in reader1:
+                i+=1
+                if i==1:
                     continue
+                #if i>30:
+                #    break
+                if row1[0] == driverid:
+                    forename = row1[4]
+                    surname = row1[5]
+                    driver = unidecode(forename + ' ' + surname)
+                    Pi_id = findOrInsert('piloto', driver)
+                    break
 
-                driverid = row3[2]
-                raceid = row3[1]
-                limite = int(row3[1])
+        with open('races.csv') as csvfile2:
+            reader2 = csv.reader(csvfile2, delimiter = ',', quotechar = '"')
+            j = 0
+            for row2 in reader2:
+                j+=1
+                if j==1:
+                    continue
+                #if j>30:
+                #    break
+                if row2[0] == raceid:
+                    gp_name = row2[4]
+                    gp_name = unidecode(gp_name)
+                    gp_date = row2[5]
+                    gp_year = row2[1]
+                    cur.execute("select id from granpremio where nombre=%s and fecha=%s limit 1", [gp_name,gp_date])
+                    gp_id = cur.fetchone()[0]
+                    cur.execute("select id from temporada where agno=%s limit 1", [gp_year])
+                    T_id = cur.fetchone()[0]
+                    break
 
-                if limite > 1047:
-                    continue 
+        #Qualy times
+        cur.execute("select * from equipo_granpremio where (gp_id,eqpi_id) = (%s, %s) limit 1", [gp_id,Pi_id])
+        if (not cur.fetchone()):
+            print("No existe", gp_id, Pi_id, raceid)
+        else:
+            print("Existe", gp_id, Pi_id, raceid, row3[0])
+            cur.execute("update equipo_granpremio set posicion_qualy = %s, tiempo_qualy_q1 = %s, tiempo_qualy_q2 = %s, tiempo_qualy_q3 = %s where (gp_id,eqpi_id) = (%s, %s)", [row3[5],row3[6],row3[7],row3[8],gp_id,Pi_id])
 
-                with open('drivers.csv') as csvfile1:
-                    reader1 = csv.reader(csvfile1, delimiter = ',', quotechar = '"')
-                    i = 0
-                    for row1 in reader1:
-                        i+=1
-                        if i==1:
-                            continue
-                        #if i>30:
-                        #    break
-                        if row1[0] == driverid:
-                            forename = row1[4]
-                            surname = row1[5]
-                            driver = unidecode(forename + ' ' + surname)
-                            cur.execute("select id from piloto where nombre=%s limit 1", [driver])
-                            Pi_id = cur.fetchone()[0]
-                            break
 
-                with open('races.csv') as csvfile2:
-                    reader2 = csv.reader(csvfile2, delimiter = ',', quotechar = '"')
-                    j = 0
-                    for row2 in reader2:
-                        j+=1
-                        if j==1:
-                            continue
-                        #if j>30:
-                        #    break
-                        if row2[0] == raceid:
-                            gp_name = row2[4]
-                            gp_name = unidecode(gp_name)
-                            gp_date = row2[5]
-                            gp_year = row2[1]
-                            cur.execute("select id from granpremio where nombre=%s and fecha=%s limit 1", [gp_name,gp_date])
-                            gp_id = cur.fetchone()[0]
-                            cur.execute("select id from temporada where agno=%s limit 1", [gp_year])
-                            T_id = cur.fetchone()[0]
-                            break
-
-                #Qualy times
-                cur.execute("update equipo_granpremio set posicion_qualy = %s, tiempo_qualy_q1 = %s, tiempo_qualy_q2 = %s, tiempo_qualy_q3 = %s where (gp_id,eqpi_id) = (%s, %s)", [row3[5],row3[6],row3[7],row3[8],gp_id,Pi_id])
 
 
 
