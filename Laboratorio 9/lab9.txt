@@ -1,6 +1,4 @@
-Integrantes: 
-    - Monserrat Montero
-    - Juan Ignacio Valdivia
+
 
 /*  P1)  */
 CREATE TABLE trx_p.Itsuki_estado (
