@@ -14,10 +14,10 @@ from unidecode import unidecode
 ################################################################################################################
 ################################################################################################################
 
-conn = psycopg2.connect(host ="cc3201.dcc.uchile.cl",
-database ="cc3201",
-user ="cc3201",
-password ="completo", port ="5521")
+conn = psycopg2.connect(host ="********",
+database ="********",
+user ="********",
+password ="********", port ="********")
 
 cur = conn.cursor()
 cur.execute("SET search_path TO F1_2;")
