@@ -3,10 +3,10 @@ import psycopg2.extras
 import csv
 import re
 
-conn = psycopg2.connect(host="localhost",
-    database="anime",
-    user="mtoro",
-    password="", port="5432")
+conn = psycopg2.connect(host="********",
+    database="********",
+    user="********",
+    password="********", port="********")
 
 
 cur = conn.cursor()
