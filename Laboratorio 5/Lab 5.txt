@@ -1,6 +1,5 @@
 Lab 5
-Juan Ignacio Valdivia
-21.087.645-6
+
 
 /*Character: id, name primary key id
 Superheroe: subclase de character name, intelligence, strenght, speed
