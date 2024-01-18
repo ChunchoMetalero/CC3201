@@ -1,18 +1,17 @@
-### Juan Ignacio Valdivia ###
-### 21.087.645-6 ###
+
 
 import psycopg2
 import psycopg2.extras
 import csv
 import re
 
-# ssh -p 240 cc3201@cc3201.dcc.uchile.cl
+####
 
 
-conn = psycopg2.connect (host = "cc3201.dcc.uchile.cl",
-database = "cc3201",
-user = "cc3201",
-password = "j'<3_cc3201" , port = "5440" )
+conn = psycopg2.connect (host = "********",
+database = "********",
+user = "********",
+password = "********" , port = "********" )
 
 cur = conn.cursor()
 cur.execute("SET search_path TO superheroes;")
